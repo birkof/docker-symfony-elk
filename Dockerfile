@@ -1,6 +1,6 @@
 FROM java:8
 
-MAINTAINER Daniel STANCU <daniel.stancu@me.com>
+MAINTAINER Daniel STANCU <birkof@birkof.ro>
 
 # Default versions
 ENV ELASTICSEARCH_VERSION 1.4 # 2.x
@@ -10,7 +10,7 @@ ENV KIBANA_VERSION 4.1.2 # 4.3.1
 # Update system repositories
 RUN apt-get -y update
 
-# Install apt-utils & Java 8
+# Install apt-utils
 RUN apt-get -y --force-yes install apt-utils
 
 # Upgrade system
@@ -27,15 +27,13 @@ RUN \
 
 RUN \
     apt-get install --no-install-recommends -y elasticsearch \
-    && apt-get clean \
     && sed -i 's/^# cluster.name:.*$/cluster.name: symfony/g' /etc/elasticsearch/elasticsearch.yml \
     && sed -i 's/^# path.data:.*$/path.data: \/tmp\/elasticsearch/g' /etc/elasticsearch/elasticsearch.yml \
     && sed -i 's/^#MAX_MAP_COUNT=.*$/MAX_MAP_COUNT=/g' /etc/default/elasticsearch
 ADD supervisor/conf.d/elasticsearch.conf /etc/supervisor/conf.d/elasticsearch.conf
 
 # Logstash
-RUN apt-get install --no-install-recommends -y logstash \
-    && apt-get clean
+RUN apt-get install --no-install-recommends -y logstash
 ADD supervisor/conf.d/logstash.conf /etc/supervisor/conf.d/logstash.conf
 
 # Configs & patterns
@@ -51,8 +49,17 @@ RUN \
     && ln -s /opt/kibana-4.3.1-linux-x64 /opt/kibana
 ADD supervisor/conf.d/kibana.conf /etc/supervisor/conf.d/kibana.conf
 
-EXPOSE 5601/tcp
+# Clean up the mess
+RUN apt-get remove --purge -y \
+        apt-utils \
+    && apt-get autoclean \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# Exposed port/s (web interface)
+EXPOSE 5601
+
+# Environment variables
 ENV PATH /opt/logstash/bin:$PATH
 
 CMD [ "/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf" ]
