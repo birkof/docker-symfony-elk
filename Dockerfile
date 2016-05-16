@@ -57,7 +57,7 @@ RUN apt-get remove --purge -y \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Exposed port/s (web interface)
-EXPOSE 5601
+EXPOSE 5601 9200
 
 # Environment variables
 ENV PATH /opt/logstash/bin:$PATH
