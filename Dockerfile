@@ -2,6 +2,8 @@ FROM java:8
 
 MAINTAINER Daniel STANCU <birkof@birkof.ro>
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Default versions
 ENV ELASTICSEARCH_VERSION 1.4 # 2.x
 ENV LOGSTASH_VERSION 1.5 # 2.1
