@@ -4,11 +4,6 @@ MAINTAINER Daniel STANCU <birkof@birkof.ro>
 
 ENV DEBIAN_FRONTEND noninteractive
 
-# Default versions
-ENV ELASTICSEARCH_VERSION 2.x # 2.x
-ENV LOGSTASH_VERSION 2.1 # 2.1
-ENV KIBANA_VERSION 4.5.2 # 4.5.2
-
 # Update system repositories
 RUN apt-get -y update
 
@@ -20,13 +15,17 @@ RUN apt-get -y dist-upgrade
 
 RUN apt-get install --no-install-recommends -y supervisor
 
-# Elasticsearch
+# Download and install the Public Signing Key:
+RUN wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | apt-key add -
+
+# Elasticsearch & Logstash repos
 RUN \
-    apt-key adv --keyserver pool.sks-keyservers.net --recv-keys 46095ACC8548582C1A2699A9D27D666CD88E42B4 \
-    && if ! grep "elasticsearch" /etc/apt/sources.list; then echo "deb http://packages.elastic.co/elasticsearch/2.x/debian stable main" >> /etc/apt/sources.list;fi \
-    && if ! grep "logstash" /etc/apt/sources.list; then echo "deb https://packages.elastic.co/logstash/2.3/debian stable main" >> /etc/apt/sources.list;fi \
+    echo "deb http://packages.elastic.co/logstash/2.3/debian stable main" | tee -a /etc/apt/sources.list \
+    && echo "deb http://packages.elastic.co/elasticsearch/2.x/debian stable main" | tee -a /etc/apt/sources.list.d/elasticsearch-2.x.list \
+    && echo "deb http://packages.elastic.co/kibana/4.5/debian stable main" | tee -a /etc/apt/sources.list \
     && apt-get update
 
+# Elasticsearch
 RUN \
     apt-get install --no-install-recommends -y elasticsearch \
     && sed -i 's/^# cluster.name:.*$/cluster.name: symfony/g' /etc/elasticsearch/elasticsearch.yml \
@@ -43,12 +42,10 @@ ADD logstash/conf.d /etc/logstash/conf.d
 ADD logstash/patterns /opt/logstash/patterns
 
 # Logstash plugins
-RUN /opt/logstash/bin/plugin install logstash-filter-translate
+RUN /opt/logstash/bin/logstash-plugin install logstash-filter-translate
 
 # Kibana
-RUN \
-    curl -s https://download.elastic.co/kibana/kibana/kibana-4.5.2-linux-x64.tar.gz | tar -C /opt -xz \
-    && ln -s /opt/kibana-4.5.2-linux-x64 /opt/kibana
+RUN apt-get install --no-install-recommends -y kibana
 ADD supervisor/conf.d/kibana.conf /etc/supervisor/conf.d/kibana.conf
 
 # Clean up the mess
